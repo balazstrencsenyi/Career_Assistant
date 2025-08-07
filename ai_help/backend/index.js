@@ -45,17 +45,41 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
 // Analyze resume using GPT
 app.post('/api/analyze', async (req, res) => {
-  const { text } = req.body;
+  const { text, lang } = req.body;
   if (!text) return res.status(400).json({ error: 'No text provided' });
 
-  try {
-    const prompt = `
-You are a career coach and resume expert. Review this resume text and provide suggestions to improve it in terms of clarity, professionalism, and effectiveness. Focus on tone, formatting, and missing elements. Provide bullet-pointed feedback.
+ let prompt;
 
-Resume:
+if (lang === 'hu') {
+  prompt = `
+Karriertanácsadó és önéletrajz szakértő vagy. Vizsgáld meg az alábbi önéletrajz szövegét, és adj részletes visszajelzést magyar nyelven. A visszajelzés legyen pontokba szedve, és térjen ki a következő szempontokra:
+
+- Szerkezet és áttekinthetőség
+- Hiányzó szakaszok (pl. összefoglaló, készségek, eredmények)
+- Nyelvhelyesség és stílus
+- Professzionális hangnem
+- Formázási és szerkesztési javaslatok
+
+Önéletrajz szövege:
 ${text}
-    `;
+  `;
+} else {
+  prompt = `
+You are a professional career coach and resume reviewer. Analyze the following resume text and provide detailed feedback in English. Your response should be in bullet points and include the following:
 
+- Structure and readability
+- Missing sections (e.g., summary, skills, achievements)
+- Language, grammar, and tone
+- Professionalism
+- Formatting and layout suggestions
+
+Resume text:
+${text}
+  `;
+}
+
+
+  try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [{ role: 'user', content: prompt }],
@@ -69,6 +93,5 @@ ${text}
   }
 });
 
-// Start server
 const PORT = 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

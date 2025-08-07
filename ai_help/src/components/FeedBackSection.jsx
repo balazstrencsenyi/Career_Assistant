@@ -1,9 +1,9 @@
 import React from 'react';
 
-function FeedbackSection({ feedback }) {
+function FeedbackSection({ feedback, title }) {
   return (
     <div className="feedback">
-      <h2>AI Suggestions</h2>
+      <h2>{title}</h2>
       <pre style={{ whiteSpace: 'pre-wrap' }}>{feedback}</pre>
     </div>
   );
