@@ -1,10 +1,14 @@
+// src/App.jsx
 import React, { useState } from 'react';
 import './app.css';
+
 import FileUpload from './components/FileUpload';
 import FeedbackSection from './components/FeedBackSection';
 import JobAdInput from './components/JobAdInput';
 import ExportButton from './components/ExportButton';
 import translations from './i18n';
+
+import { useAuth } from './context/AuthContext'; // ⬅️ Step 8: use auth
 
 function App() {
   const [resumeText, setResumeText] = useState('');
@@ -14,6 +18,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [language, setLanguage] = useState('en');
 
+  const { user, logout } = useAuth(); // ⬅️ Step 8: user + logout
   const t = translations[language];
 
   const getFeedback = async () => {
@@ -45,10 +50,11 @@ function App() {
   return (
     <div className="app-container dark">
       <div className="control-panel">
-        {/* Header controls */}
-        <div className="header-controls">
+        {/* Header bar */}
+        <div className="header-controls" style={{ gap: '1rem' }}>
+          {/* Language (left) */}
           <div className="language-control">
-            <span className="icon"></span>
+            <span className="icon" aria-hidden></span>
             <select
               aria-label={t.languageLabel}
               value={language}
@@ -58,12 +64,21 @@ function App() {
               <option value="hu">HU</option>
             </select>
           </div>
+
+          {/* Spacer to push user chip to the right */}
+          <div style={{ flex: 1 }} />
+
+          {/* User chip (right) */}
+          <div className="user-chip" title={user?.email || ''}>
+            <span>{user?.displayName || user?.email || 'User'}</span>
+            <button className="chip-btn" onClick={logout}>Logout</button>
+          </div>
         </div>
 
         {/* Title stays English */}
         <h1 className="title">AI Career Assistant</h1>
 
-        {/* Upload + Job ad */}
+        {/* Inputs */}
         <FileUpload onUpload={setResumeText} label={t.uploadPrompt} />
 
         <JobAdInput
