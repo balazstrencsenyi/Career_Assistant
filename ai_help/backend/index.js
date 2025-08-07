@@ -1,3 +1,5 @@
+// 📁 backend/index.js
+
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -13,11 +15,8 @@ app.use(express.json());
 
 const upload = multer({ dest: 'uploads/' });
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Upload endpoint
 app.post('/api/upload', upload.single('file'), async (req, res) => {
   const file = req.file;
   let text = '';
@@ -27,71 +26,78 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       const dataBuffer = fs.readFileSync(file.path);
       const data = await pdfParse(dataBuffer);
       text = data.text;
-    } else if (
-      file.mimetype ===
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ) {
+    } else if (file.mimetype.includes('wordprocessingml')) {
       const result = await mammoth.extractRawText({ path: file.path });
       text = result.value;
     } else {
       return res.status(400).json({ error: 'Unsupported file type' });
     }
-
     res.json({ text });
   } catch (err) {
     res.status(500).json({ error: 'Failed to parse file' });
   }
 });
 
-// Analyze resume using GPT
 app.post('/api/analyze', async (req, res) => {
-  const { text, lang } = req.body;
+  const { text, lang, jobAd } = req.body;
   if (!text) return res.status(400).json({ error: 'No text provided' });
 
- let prompt;
+  const isHU = lang === 'hu';
 
-if (lang === 'hu') {
-  prompt = `
-Karriertanácsadó és önéletrajz szakértő vagy. Vizsgáld meg az alábbi önéletrajz szövegét, és adj részletes visszajelzést magyar nyelven. A visszajelzés legyen pontokba szedve, és térjen ki a következő szempontokra:
-
-- Szerkezet és áttekinthetőség
-- Hiányzó szakaszok (pl. összefoglaló, készségek, eredmények)
-- Nyelvhelyesség és stílus
+  const basePrompt = isHU
+    ? `Karriertanácsadó és önéletrajz szakértő vagy. Vizsgáld meg az alábbi önéletrajzot és adj visszajelzést magyar nyelven:
+- Szerkezet
+- Hiányzó szakaszok
+- Nyelvhelyesség
 - Professzionális hangnem
-- Formázási és szerkesztési javaslatok
+- Formázási javaslatok
 
-Önéletrajz szövege:
-${text}
-  `;
-} else {
-  prompt = `
-You are a professional career coach and resume reviewer. Analyze the following resume text and provide detailed feedback in English. Your response should be in bullet points and include the following:
-
-- Structure and readability
-- Missing sections (e.g., summary, skills, achievements)
-- Language, grammar, and tone
+Szöveg:
+${text}`
+    : `You are a career coach. Analyze this resume:
+- Structure
+- Missing sections
+- Language and tone
 - Professionalism
-- Formatting and layout suggestions
+- Formatting suggestions
 
-Resume text:
-${text}
-  `;
-}
+Resume:
+${text}`;
 
+  const tailoringPrompt = jobAd
+    ? (isHU
+        ? `Az alábbi álláshirdetés alapján szabj személyre javaslatokat az önéletrajz módosítására:
+
+Állásleírás:
+${jobAd}`
+        : `Based on the job ad below, tailor your feedback for resume adjustments:
+
+Job Ad:
+${jobAd}`)
+    : null;
 
   try {
-    const response = await openai.chat.completions.create({
+    const messages = [
+      { role: 'user', content: basePrompt },
+    ];
+    if (tailoringPrompt) messages.push({ role: 'user', content: tailoringPrompt });
+
+    const completion = await openai.chat.completions.create({
       model: 'gpt-4',
-      messages: [{ role: 'user', content: prompt }],
+      messages,
     });
 
-    const feedback = response.choices[0].message.content;
-    res.json({ feedback });
+    const fullText = completion.choices[0].message.content;
+    const splitText = tailoringPrompt ? fullText.split(/(?=Tailored Suggestions:|Személyre szabott javaslatok:)/i) : [fullText];
+
+    res.json({
+      feedback: splitText[0].trim(),
+      tailoring: splitText[1] ? splitText[1].trim() : null,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'OpenAI request failed' });
   }
 });
 
-const PORT = 3001;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(3001, () => console.log('Server running on port 3001'));

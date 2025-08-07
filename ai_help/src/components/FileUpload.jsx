@@ -1,6 +1,6 @@
 import React from 'react';
 
-function FileUpload({ onUpload, label, button }) {
+function FileUpload({ onUpload, label = "Upload your resume (PDF or DOCX)" }) {
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -18,14 +18,9 @@ function FileUpload({ onUpload, label, button }) {
   };
 
   return (
-    <div className="upload-area">
-      <p>{label}</p>
-      <input
-        type="file"
-        accept=".pdf,.docx"
-        onChange={handleFileChange}
-        style={{ marginTop: '1rem' }}
-      />
+    <div>
+      <label>{label}</label>
+      <input type="file" accept=".pdf,.docx" onChange={handleFileChange} />
     </div>
   );
 }

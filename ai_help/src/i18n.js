@@ -5,6 +5,7 @@ const translations = {
     chooseFile: "Choose File",
     analyzing: "Analyzing your resume...",
     suggestionsTitle: "AI Suggestions",
+    tailoredTitle: "Tailored Suggestions",
     languageLabel: "Language",
   },
   hu: {
@@ -13,7 +14,8 @@ const translations = {
     chooseFile: "Fájl kiválasztása",
     analyzing: "Önéletrajz elemzése...",
     suggestionsTitle: "AI Javaslatok",
-    languageLabel: "Nyelv",
+     tailoredTitle: "Személyre szabott javaslatok",
+    languageLabel: "Language",
   },
 };
 
