@@ -13,7 +13,6 @@ function App() {
   const [tailoredFeedback, setTailoredFeedback] = useState('');
   const [loading, setLoading] = useState(false);
   const [language, setLanguage] = useState('en');
-  const [darkMode, setDarkMode] = useState(false);
 
   const t = translations[language];
 
@@ -29,16 +28,14 @@ function App() {
         body: JSON.stringify({
           text: resumeText,
           lang: language,
-          jobAd: jobAdText
-        })
+          jobAd: jobAdText,
+        }),
       });
 
       const data = await response.json();
       setAiFeedback(data.feedback);
-      if (data.tailoring) {
-        setTailoredFeedback(data.tailoring);
-      }
-    } catch (err) {
+      if (data.tailoring) setTailoredFeedback(data.tailoring);
+    } catch {
       setAiFeedback('❌ Failed to get feedback. Please try again.');
     }
 
@@ -46,41 +43,41 @@ function App() {
   };
 
   return (
-    <div className={`app-container ${darkMode ? 'dark' : ''}`}>
+    <div className="app-container dark">
       <div className="control-panel">
-        <div className="language-switch">
-          <label htmlFor="language">🌍 {t.languageLabel}</label>
-          <select
-            id="language"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-          >
-            <option value="en">English</option>
-            <option value="hu">Hungarian</option>
-          </select>
+        {/* Header controls */}
+        <div className="header-controls">
+          <div className="language-control">
+            <span className="icon"></span>
+            <select
+              aria-label={t.languageLabel}
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+            >
+              <option value="en">EN</option>
+              <option value="hu">HU</option>
+            </select>
+          </div>
         </div>
 
-        <label className="dark-toggle">
-          <input
-            type="checkbox"
-            checked={darkMode}
-            onChange={() => setDarkMode(!darkMode)}
-          />
-          🌙 Dark Mode
-        </label>
+        {/* Title stays English */}
+        <h1 className="title">AI Career Assistant</h1>
 
-        <h1 className="title">{t.title}</h1>
-
+        {/* Upload + Job ad */}
         <FileUpload onUpload={setResumeText} label={t.uploadPrompt} />
 
-        <JobAdInput onChange={setJobAdText} />
+        <JobAdInput
+          onChange={setJobAdText}
+          label={t.jobLabel}
+          placeholder={t.jobPlaceholder}
+        />
 
         <button
           className="analyze-button"
           disabled={!resumeText.trim()}
           onClick={getFeedback}
         >
-          🚀 {t.analyzeButton || 'Start Analysis'}
+          🚀 {t.analyzeButton}
         </button>
       </div>
 
@@ -88,17 +85,11 @@ function App() {
         {loading && <p className="loading">⏳ {t.analyzing}</p>}
 
         {aiFeedback && (
-          <FeedbackSection
-            title={t.suggestionsTitle}
-            feedback={aiFeedback}
-          />
+          <FeedbackSection title={t.suggestionsTitle} feedback={aiFeedback} />
         )}
 
         {tailoredFeedback && (
-          <FeedbackSection
-            title={t.tailoredTitle || 'Tailored Suggestions'}
-            feedback={tailoredFeedback}
-          />
+          <FeedbackSection title={t.tailoredTitle} feedback={tailoredFeedback} />
         )}
 
         {(aiFeedback || tailoredFeedback) && (
